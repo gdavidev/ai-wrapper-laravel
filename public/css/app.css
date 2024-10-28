@@ -1,0 +1,29 @@
+/*
+* SIDEBAR
+*/
+.file-system .button {
+    padding: 0.25rem;
+    border-radius: 10%;
+}
+
+.file-system .button:hover {
+    background-color: rgb(91, 97, 102);
+}
+
+.file-system .folder {
+    font-weight: bold;
+}
+.file-system .folder-header {
+    background: dodgerblue;
+    min-height: 30px;
+}
+.file-system .folder > .folder-container {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows ease-in-out;
+    transition-duration: 0.6s;
+    overflow: hidden;
+}
+.file-system .folder.folder-closed > .folder-container {
+    grid-template-rows: 0;
+}
