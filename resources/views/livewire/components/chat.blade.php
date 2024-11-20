@@ -24,13 +24,21 @@
                         </div>
                     </div>
                 @else
-                    <div class="direct-chat-msg">
+                    <div class="ai-direct-chat-msg">
                         <div class="direct-chat-infos clearfix" style="color: white">
                             <span class="direct-chat-name float-left">Assistant</span>
+                            <div class='d-flex ai-msg-actions'>
+                                <a href="#" class="btn-info mx-2 ai-msg-append-action" style="margin-right: 0;">
+                                    append
+                                </a>
+                                <a href="#" class="btn-info ai-msg-override-action" style="margin-right: 0;">
+                                    override
+                                </a>
+                            </div>
                         </div>
-                        <div class="direct-chat-text" style="margin-right: 0;">
+                        <a href="#" class="direct-chat-text ai-direct-chat-text" style="margin-right: 0;">
                             {{ $message['content'] }}
-                        </div>
+                        </a>
                     </div>
                 @endif
             @endforeach

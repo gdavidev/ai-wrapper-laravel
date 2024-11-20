@@ -27,7 +27,7 @@ class Chat extends Component
             'model' => 'microsoft/Phi-3.5-mini-instruct',
             'messages' => $messagesData,
             'temperature' => 0.0,
-            'max_tokens' => 1024,
+            'max_tokens' => 5024,
             'stream' => false,
         ];
         $json = json_encode($data);

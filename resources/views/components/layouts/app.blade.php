@@ -4,6 +4,7 @@
 <head>
     <x-layout.head-includes />
     @livewireStyles
+    @vite('resources/css/code-editor.css')
     <title>FakeCursor</title>
 </head>
 
@@ -20,6 +21,8 @@
     <x-layout.scripts />
 
     @vite('resources/js/app.js')
+    @vite('resources/js/code-editor.js')
+    @vite('resources/js/chat.js')
     @livewireScripts
 </body>
 

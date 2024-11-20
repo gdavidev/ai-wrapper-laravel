@@ -25,7 +25,7 @@ const draculaTheme = EditorView.theme({
         borderLeftColor: "#f8f8f2",
     },
     "&.cm-focused .cm-selectionBackground, ::selection": {
-        backgroundColor: "#44475a",
+        backgroundColor: "#aaaaaa",
     },
     ".cm-gutters": {
         backgroundColor: "#282a36",
@@ -57,22 +57,20 @@ const myHighlightStyle = HighlightStyle.define([
     { tag: tags.meta, color: "#f8f8f2" },
 ]);
 
-let editorView = undefined;
+var editorView = undefined;
 export function loadEditor(file) {
-    const editorState = EditorState.create({
-        doc: file,
-        extensions: [
-            basicSetup,
-            highlightActiveLine(),
-            keymap.of([indentWithTab]),
-            html(),
-            syntaxHighlighting(myHighlightStyle),
-            draculaTheme,
-        ]
-    })
-
     editorView = new EditorView({
-        state: editorState,
+        state: EditorState.create({
+            doc: file,
+            extensions: [
+                basicSetup,
+                highlightActiveLine(),
+                keymap.of([indentWithTab]),
+                html(),
+                syntaxHighlighting(myHighlightStyle),
+                draculaTheme,
+            ]
+        }),
         parent: document.getElementById('code-editor')
     });
 }
@@ -96,8 +94,8 @@ async function getFile(filePath) {
     }
 }
 
-async function saveFile(view) {
-    const content = view.state.doc.toString();
+export async function saveFile() {
+    const content = editorView.state.doc.toString();
     try {
         const response = await fetch('/save-file', {
             method: 'POST',
@@ -107,31 +105,49 @@ async function saveFile(view) {
             },
             body: JSON.stringify({ content: content }),
         });
-        const result = await response.json();
-        console.log(result)
+        await response.json();
+        $('iframe')[0].contentWindow.location.reload()
     } catch (error) {
         console.error('Error saving to server:', error);
     }
 }
 
-$('#btn-download').click(async () => {
-    saveFile(editorView);
-    const content = editorView.state.doc.toString();
-    const blob = new Blob([content], { type: 'text/plain' });
+export function appendToEditor(text) {
+    editorView.dispatch({
+        changes: {
+            from: editorView.state.doc.length,
+            insert: text
+        }
+    });
+}
 
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'code.txt';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-});
-$('#btn-save').click(async () => {
-    await saveFile(editorView);
-    $('iframe')[0].contentWindow.location.reload();
-})
+export function overrideEditor(text) {
+    editorView.dispatch({
+        changes: {
+            from: 0,
+            to: editorView.state.doc.length,
+            insert: text
+        }
+    });
+}
 
-$(document).ready(async () => {
-    const file = await getFile('documents/index.html')
+export async function InitilizeEditor(startingFile) {
+    $('#btn-download').click(async () => {
+        await saveFile();
+        const content = editorView.state.doc.toString();
+        const blob = new Blob([content], { type: 'text/plain' });
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'code.txt';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+    $('#btn-save').click(() => {
+        saveFile();
+    });
+
+    const file = await getFile(startingFile)
     loadEditor(file);
-})
+}
