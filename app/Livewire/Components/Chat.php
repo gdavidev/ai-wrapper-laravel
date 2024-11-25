@@ -6,9 +6,15 @@ use Livewire\Component;
 
 class Chat extends Component
 {
-    public $inputValue;
+    public $inputValue = '';
+    public $inputAttachment = '';
     public $messages = [];
     public $errorMessage = '';
+
+    public function mount() {
+        if (isset($_SESSION['messages']))
+            $this->messages = $_SESSION['messages'];
+    }
 
     public function render()
     {
@@ -17,11 +23,10 @@ class Chat extends Component
 
     public function sendMessage(): void
     {
-        $basePrompt = "Don't make any comments or any markdown and get me just and only the plain text needed for: ";
         $messagesData = $this->messages;
         $messagesData[] = [
             'role' => 'user',
-            'content' => $basePrompt.$this->inputValue,
+            'content' => $this->getPrompt(),
         ];
         $data = [
             'model' => 'microsoft/Phi-3.5-mini-instruct',
@@ -41,7 +46,7 @@ class Chat extends Component
             curl_setopt($curl, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
                 'Content-Length: ' . strlen($json),
-                'Authorization: Bearer '.env('API_KEY')
+                'Authorization: Bearer ' . env('API_KEY')
             ]);
             curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
 
@@ -52,6 +57,9 @@ class Chat extends Component
 
             $this->addMessage('user', $this->inputValue);
             $this->addMessage($messageObject['role'], $cleanedCodeResponse);
+
+            $this->inputAttachment = '';
+            $this->errorMessage = '';
         } catch (\Exception $e) {
             $this->errorMessage = "API Error: " . $e->getMessage();
         } finally {
@@ -62,6 +70,7 @@ class Chat extends Component
                 }
             }
         }
+        $_SESSION['messages'] = $this->messages;
     }
 
     private function addMessage(string $role, string $message): void
@@ -70,5 +79,16 @@ class Chat extends Component
             'role' => $role,
             'content' => $message
         ];
+    }
+
+    private function getPrompt() {
+        $basePrompt = "Don't make any comments, markup or explanation about the code and get me just and only the plain text needed for: ";
+        if ($this->inputAttachment !== '') {
+            return "$basePrompt Considering that $this->inputValue,
+                send me the refactored version of the following code
+                like you would replace it, remeber to keep the current identation:
+                $this->inputAttachment";
+        }
+        return "$basePrompt $this->inputValue";
     }
 }

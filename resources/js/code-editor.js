@@ -3,8 +3,9 @@ import { EditorView, keymap, highlightActiveLine } from "@codemirror/view";
 import { EditorState } from '@codemirror/state';
 import { indentWithTab } from "@codemirror/commands";
 import { html } from "@codemirror/lang-html";
-import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle, indentOnInput } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { attachCodeToMessage } from "./chat";
 
 // Dracula-inspired theme colors
 const draculaTheme = EditorView.theme({
@@ -16,7 +17,6 @@ const draculaTheme = EditorView.theme({
     },
     ".cm-content": {
         caretColor: "#f8f8f2",
-        whiteSpace: 'normal'
     },
     ".cm-scroller": {
         fontFamily: "monospace",
@@ -25,7 +25,7 @@ const draculaTheme = EditorView.theme({
         borderLeftColor: "#f8f8f2",
     },
     "&.cm-focused .cm-selectionBackground, ::selection": {
-        backgroundColor: "#aaaaaa",
+        backgroundColor: "#44475a",
     },
     ".cm-gutters": {
         backgroundColor: "#282a36",
@@ -69,9 +69,55 @@ export function loadEditor(file) {
                 html(),
                 syntaxHighlighting(myHighlightStyle),
                 draculaTheme,
+                EditorState.tabSize.of(4),
+                EditorView.updateListener.of (handleSelectionUpdate),
+                indentOnInput(),
+                EditorView.updateListener.of((update) => {
+                    if (update.docChanged) {
+                        debouncedHandler()
+                    }
+                  }),
             ]
         }),
         parent: document.getElementById('code-editor')
+    });
+}
+
+const debouncedHandler = debounce(() => {
+    saveFile()
+  }, 500);
+
+function debounce(func, wait) {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
+
+const refactorButton = document.getElementById('btn-refactor')
+function handleSelectionUpdate(update) {
+    if (update.selectionSet) { // Triggered when the selection changes
+        const hasSelection = update.state.selection.ranges.some(
+            (range) => !range.empty
+        );
+        refactorButton.style.display = hasSelection ? "block" : "none";
+    }
+}
+
+export function getSelection() {
+    const selection = editorView.state.selection.ranges[0];
+
+    return editorView.state.doc.sliceString(selection.from, selection.to).trim()
+}
+
+export function replaceRange({text, from, to}) {
+    editorView.dispatch({
+        changes: {
+            from: from,
+            to: to,
+            insert: text
+        }
     });
 }
 
@@ -85,10 +131,7 @@ async function getFile(filePath) {
             },
             body: JSON.stringify({ path: filePath }),
         });
-        const result = await response.text();
-        console.log(result);
-
-        return result;
+        return await response.text();
     } catch (error) {
         console.error('Error getting file from server:', error);
     }
@@ -131,8 +174,19 @@ export function overrideEditor(text) {
     });
 }
 
+export function overrideSelection(text) {
+    const selection = editorView.state.selection.ranges[0];
+    editorView.dispatch({
+        changes: {
+            from: selection.from,
+            to: selection.to,
+            insert: text
+        }
+    });
+}
+
 export async function InitilizeEditor(startingFile) {
-    $('#btn-download').click(async () => {
+    $('.code-editor-overlay #btn-download').click(async () => {
         await saveFile();
         const content = editorView.state.doc.toString();
         const blob = new Blob([content], { type: 'text/plain' });
@@ -144,8 +198,11 @@ export async function InitilizeEditor(startingFile) {
         link.click();
         document.body.removeChild(link);
     });
-    $('#btn-save').click(() => {
+    $('.code-editor-overlay #btn-save').click(() => {
         saveFile();
+    });
+    $('.code-editor-overlay #btn-refactor').click(() => {
+        attachCodeToMessage(getSelection());
     });
 
     const file = await getFile(startingFile)

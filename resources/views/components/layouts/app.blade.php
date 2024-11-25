@@ -20,10 +20,10 @@
     </div>
     <x-layout.scripts />
 
+    @livewireScripts
     @vite('resources/js/app.js')
     @vite('resources/js/code-editor.js')
     @vite('resources/js/chat.js')
-    @livewireScripts
 </body>
 
 </html>

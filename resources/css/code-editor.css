@@ -1,3 +1,8 @@
 .code-editor-buttons a:hover {
     background-color: #AAA6;
+    cursor: pointer;
+}
+
+.code-editor-overlay {
+    height: calc(100vh - 110px);
 }
